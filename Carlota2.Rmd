@@ -311,18 +311,18 @@ ggplot(Trump_approval,aes(x=week))+
   geom_line(aes(y=upper_bound))+geom_point(aes(y=mean))+
   #Fill the confidence interval with colour
   geom_ribbon(aes(ymin=lower_bound,ymax=upper_bound),alpha=0.2)+facet_wrap(~year)+
-  #Create a horizontal line at 0
+  #Create a horizontal line at y=0
   geom_hline(yintercept=0, size=1.5, color="orange")+
   labs(title="Estimating Net Approval (approve-disapprove) for Donald Trump
 ",subtitle="Weekly average of all polls",x="Week of the year",y="Average Net Approval (%)")+
   #Customize the size of the font and scales
   theme(text = element_text(size = 20),legend.position = "none") + 
-  scale_y_continuous(limits=c(-20, 7.5),n.breaks=12)+ scale_x_continuous(limits=c(0, 53),n.breaks=5)
+  scale_y_continuous(limits=c(-20, 7.5),n.breaks=12)+ scale_x_continuous(limits=c(0, 52),n.breaks=6)
 
 
 ```
 
-We can observe that in the top leftmost plot, the CI becomes very wide and this is due to an increase in t_critical caused by a very small sample size (2 polls only). For the sake of reference, we can compare our plots to the ones below and observe that the values and trends match.
+For the sake of reference, we can compare our plots to the ones below and observe that the values and trends match.
 
 ```{r trump_margins, echo=FALSE, out.width="100%"}
 knitr::include_graphics(here::here("images", "trump_approval_margin.png"), error = FALSE)
