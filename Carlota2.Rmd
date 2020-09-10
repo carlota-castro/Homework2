@@ -1,5 +1,5 @@
 ---
-title: "Session 4: Homework 2"
+title: 'Session 4: Homework 2'
 author: "Carlota_exTrump"
 date: "`r Sys.Date()`"
 output:
@@ -10,6 +10,8 @@ output:
     toc: yes
     toc_float: yes
     code_folding: show
+  word_document:
+    toc: yes
 ---
 
 
@@ -80,7 +82,11 @@ You have two objectives in this section:
 
 
 ```{r tidyweather}
-
+dates<-weather%>%
+  select(Year:Dec)
+#Convert the wide to a long format version
+tidyweather<-dates %>%
+  pivot_longer(cols=Jan:Dec,names_to="Month",values_to="delta")
 ```
 
 Inspect your dataframe. It should have three variables now, one each for 
@@ -277,48 +283,58 @@ Can we estimate the *population* parameter on time spent on email weekly?
 
 # Trump's Approval Margins
 
-As we saw in class, fivethirtyeight.com has detailed data on [all polls that track the president's approval ](https://projects.fivethirtyeight.com/trump-approval-ratings)
+For our analysis of president Trump's approval, firstly we need to load the data! 
 
 ```{r, cache=TRUE}
+
 # Import approval polls data
 approval_polllist <- read_csv(here::here('data', 'approval_polllist.csv'))
-
-# or directly off fivethirtyeight website
-# approval_polllist <- read_csv('https://projects.fivethirtyeight.com/trump-approval-data/approval_polllist.csv') 
-
+#Take a look at the data
 glimpse(approval_polllist)
-
-# Use `lubridate` to fix dates, as they are given as characters.
+#Use lubridate to fix the dates as they are given as characters
+approval_polllist$modeldate<-mdy(approval_polllist$modeldate)
+approval_polllist$startdate<-mdy(approval_polllist$startdate)
+approval_polllist$enddate<-mdy(approval_polllist$enddate)
+approval_polllist$createddate<-mdy(approval_polllist$createddate)
 ```
 
 ## Create a plot
 
-What I would like you to do is to calculate the average net approval rate (approve- disapprove) for each week since he got into office. I want you plot the net approval, along with its 95% confidence interval. There are various dates given for each poll, please use `enddate`, i.e., the date the poll ended.
+We will calculate the average net approval rate (approve-disapprove) for each week since Trump got into office, and plot the net approval along with the 95% confidence intervals.
 
-```{R Trump}
+```{R Trump,fig.height=5,fig.width=10}
 Trump_approval<-approval_polllist%>%
   #Filter to select the voters only from the subgroup list
 filter(subgroup=="Voters")%>%
-  #Create the relevant variables: get the week and year from the enddate, and create plotting variable net approval
-  mutate(date=mdy(enddate),week=week(date),year=year(date),net_approval=approve-disapprove)%>%
+  #Create the relevant variables: get the week and year from the enddate, and create plotting variable "net approval"
+  mutate(date=enddate,week=week(date),year=year(date),net_approval=approve-disapprove)%>%
   group_by(week,year)%>%
   #Calculate the relevant statistics: mean, count, standard dev, standard error, t critical, and CI boundaries
   summarise(mean=mean(net_approval),stdev=sd(net_approval),count=n(),se=stdev/sqrt(count),t_critical=qt(0.975,count-1),lower_bound=mean-t_critical,upper_bound=mean+t_critical)
+#Remove outlier
+Trump_approval<- Trump_approval[-189,]
 
-#plot the relevant variables
-ggplot(Trump_approval,aes(x=week))+
+#Plot the relevant variables
+ggplot(Trump_approval,aes(x=week,fill=as.factor(year)))+scale_fill_manual(values = c("red","green","#66FFFF","#E5CCFF"))+
   geom_line(aes(y=lower_bound))+geom_line(aes(y=mean))+ 
   geom_line(aes(y=upper_bound))+geom_point(aes(y=mean))+
-  #Fill the confidence interval with colour
-  geom_ribbon(aes(ymin=lower_bound,ymax=upper_bound),alpha=0.2)+facet_wrap(~year)+
+  #Shade the confidence interval
+  geom_ribbon(aes(ymin=lower_bound,ymax=upper_bound),alpha=0.3)+facet_wrap(~year)+
   #Create a horizontal line at y=0
   geom_hline(yintercept=0, size=1.5, color="orange")+
   labs(title="Estimating Net Approval (approve-disapprove) for Donald Trump
 ",subtitle="Weekly average of all polls",x="Week of the year",y="Average Net Approval (%)")+
-  #Customize the size of the font and scales
-  theme(text = element_text(size = 20),legend.position = "none") + 
-  scale_y_continuous(limits=c(-20, 7.5),n.breaks=12)+ scale_x_continuous(limits=c(0, 52),n.breaks=6)
-
+  
+  #Customize the size of the font, scales and background, and gridline colours
+  theme(text = element_text(size = 12),legend.position = "none", panel.background = element_rect(fill = "white",
+                                colour = "white",
+                                size = 0.5, linetype = "solid"),
+  panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                colour = "grey"), 
+  panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                colour = "grey")) + 
+  scale_y_continuous(breaks=c(-20,-17.5,-15,-12.5,-10,-7.5,-5,-2.5,0,2.5,5.0,7.5))+
+  scale_x_continuous(breaks=c(0, 13,26,39,52))
 
 ```
 
